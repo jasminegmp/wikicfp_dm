@@ -1,3 +1,21 @@
+import java.io.IOException;
+import java.util.StringTokenizer;
+import java.util.Scanner;
+import java.util.Iterator;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
+
 public class WordCount2 {
 
   public static class TokenizerMapper
@@ -28,17 +46,24 @@ public class WordCount2 {
   }
 
   public static class IntSumReducer
-       extends Reducer<Text,IntWritable,Text,IntWritable> {
-    private IntWritable result = new IntWritable();
+       extends Reducer<Text,Text,Text,Text> {
+    private Text result = new Text();
 
-    public void reduce(Text key, Iterable<IntWritable> values,
+    public void reduce(Text key, Iterable<Text> values,
                        Context context
                        ) throws IOException, InterruptedException {
-      int sum = 0;
-      for (IntWritable val : values) {
-        sum += val.get();
+      //int sum = 0;
+      String temp = "";
+      /*
+      while(values.hasNext()){
+      temp = temp + values.next().toString();
+    }*/
+      
+      for (Text val : values) {
+        temp += val.toString();
+        
       }
-      result.set(sum);
+      result.set(temp);
       context.write(key, result);
     }
   }
@@ -48,9 +73,9 @@ public class WordCount2 {
     Job job = Job.getInstance(conf, "word count");
     job.setJarByClass(WordCount2.class);
     job.setMapperClass(TokenizerMapper.class);
-    //job.setCombinerClass(IntSumReducer.class);
-    //job.setReducerClass(IntSumReducer.class);
-    job.setNumReduceTasks(0);
+    job.setCombinerClass(IntSumReducer.class);
+    job.setReducerClass(IntSumReducer.class);
+    //job.setNumReduceTasks(0);
     job.setOutputKeyClass(Text.class);
     job.setOutputValueClass(Text.class);
     FileInputFormat.addInputPath(job, new Path(args[0]));
