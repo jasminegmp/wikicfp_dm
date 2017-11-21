@@ -1,9 +1,5 @@
 import java.io.IOException;
 import java.util.StringTokenizer;
-import java.util.Scanner;
-import java.util.Iterator;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -14,9 +10,8 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
-import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
-public class WordCount2 {
+public class WordCount3 {
 
   public static class TokenizerMapper
        extends Mapper<Object, Text, Text, Text>{
@@ -29,18 +24,11 @@ public class WordCount2 {
     public void map(Object key, Text value, Context context
                     ) throws IOException, InterruptedException {
       StringTokenizer itr = new StringTokenizer(value.toString(), "\t");
-    //String[] itr = value.toString().split("\t");
-    //conf_acro.set(itr[0]);
-    //conf_name.set(itr[1]);
-    //conf_name.set(itr[2]);
       while (itr.hasMoreTokens()) {
-    
-    conf_acro.set(itr.nextToken());
-    
+    conf_acro.set(itr.nextToken().split("\\s+")[0]);
     conf_name.set(itr.nextToken());
     conf_loc.set(itr.nextToken());
-    context.write(conf_loc, new Text(conf_acro));
-    //System.out.println(conf_name);
+    context.write(conf_acro, new Text(conf_loc));
       }
     }
   }
@@ -52,15 +40,17 @@ public class WordCount2 {
     public void reduce(Text key, Iterable<Text> values,
                        Context context
                        ) throws IOException, InterruptedException {
-      //int sum = 0;
-      String temp = "";
-      /*
-      while(values.hasNext()){
-      temp = temp + values.next().toString();
-    }*/
-      
+      String temp = "";    
+      String prev_loc = "";
+      String curr_loc = "";
       for (Text val : values) {
-        temp += val.toString();
+    curr_loc = val.toString();
+    if (!curr_loc.equals(prev_loc))
+      {
+      temp += val.toString();
+      prev_loc = val.toString();
+      temp += " ";
+    }
         
       }
       result.set(temp);
@@ -71,11 +61,10 @@ public class WordCount2 {
   public static void main(String[] args) throws Exception {
     Configuration conf = new Configuration();
     Job job = Job.getInstance(conf, "word count");
-    job.setJarByClass(WordCount2.class);
+    job.setJarByClass(WordCount3.class);
     job.setMapperClass(TokenizerMapper.class);
     job.setCombinerClass(IntSumReducer.class);
     job.setReducerClass(IntSumReducer.class);
-    //job.setNumReduceTasks(0);
     job.setOutputKeyClass(Text.class);
     job.setOutputValueClass(Text.class);
     FileInputFormat.addInputPath(job, new Path(args[0]));
