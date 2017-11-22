@@ -11,6 +11,9 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
+// WordCount1 - Computes and output the number of conferences by city
+// Builds off of original WordCount.java provided by Hadoop
+// https://hadoop.apache.org/docs/stable/hadoop-mapreduce-client/hadoop-mapreduce-client-core/MapReduceTutorial.html
 public class WordCount1 {
 
   public static class TokenizerMapper
@@ -21,10 +24,12 @@ public class WordCount1 {
 
     public void map(Object key, Text value, Context context
                     ) throws IOException, InterruptedException {
+	  // Tab separated				
       StringTokenizer itr = new StringTokenizer(value.toString(), "\t");
       int count = 1;
       while (itr.hasMoreTokens()) {
 		word.set(itr.nextToken());
+		// Because I only care about conference location, which is column 3, I only write if the string token is from the 3rd col
 		if (count % 3 == 0)
 		{
 			context.write(word, one);

@@ -13,8 +13,15 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
+// WordCount4 - For each city, compute and output time series of number of conferences per year
+// Builds off of original WordCount.java provided by Hadoop
+// https://hadoop.apache.org/docs/stable/hadoop-mapreduce-client/hadoop-mapreduce-client-core/MapReduceTutorial.html
+
 public class WordCount4 {
 
+  // In this mapper, I first used regular expression to only extract out the year in the conference acronym
+  // I then combined the location and year to use as a key
+  // And then used the new key Text and count for the value so I can reduce like the original WordCount.java 
   public static class TokenizerMapper
        extends Mapper<Object, Text, Text, IntWritable>{
 
@@ -31,7 +38,7 @@ public class WordCount4 {
 		year = itr.nextToken().replaceAll(".*(\\d{4}).*","$1");
 		conf_name = itr.nextToken();
 		conf_loc = itr.nextToken();
-		loc_year = conf_loc + " " + year;
+		loc_year = conf_loc + "\t" + year;
 		context.write(new Text(loc_year), one);
       }
     }

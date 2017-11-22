@@ -11,11 +11,19 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
+// WordCount3 - For each conference, regardless of year output the list of cities
+// Builds off of original WordCount.java provided by Hadoop
+// https://hadoop.apache.org/docs/stable/hadoop-mapreduce-client/hadoop-mapreduce-client-core/MapReduceTutorial.html
+
+
 public class WordCount3 {
 
   public static class TokenizerMapper
        extends Mapper<Object, Text, Text, Text>{
-
+	// Very similar mapper as what I did in WordCount2.java
+	// Difference is that I strip off the year in the conference acronym
+	// Example: KDD 2016 is turned into KDD
+	// This is so I can have conference acronym keys match
     private final static IntWritable one = new IntWritable(1);
     private Text conf_acro = new Text();
     private Text conf_name = new Text();
@@ -25,6 +33,7 @@ public class WordCount3 {
                     ) throws IOException, InterruptedException {
       StringTokenizer itr = new StringTokenizer(value.toString(), "\t");
       while (itr.hasMoreTokens()) {
+	  	// Here is where I strip off the year
 		conf_acro.set(itr.nextToken().split("\\s+")[0]);
 		conf_name.set(itr.nextToken());
 		conf_loc.set(itr.nextToken());
@@ -34,6 +43,10 @@ public class WordCount3 {
   }
 
   public static class IntSumReducer
+   	// In my reducer, I want to reduce on the conference (conf_acro)
+	// And keep appending the value (location) onto matching keys
+	// Example <KDD, Los Angeles> and <KDD, Tokyo> 
+	// Would reduce down to <KDD, Los Angeles Tokyo>
        extends Reducer<Text,Text,Text,Text> {
     private Text result = new Text();
 

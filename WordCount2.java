@@ -1,9 +1,5 @@
 import java.io.IOException;
 import java.util.StringTokenizer;
-import java.util.Scanner;
-import java.util.Iterator;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -14,11 +10,17 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
-import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
+
+
+// WordCount2 - Output list of conferences per city
+// Builds off of original WordCount.java provided by Hadoop
+// https://hadoop.apache.org/docs/stable/hadoop-mapreduce-client/hadoop-mapreduce-client-core/MapReduceTutorial.html
 
 public class WordCount2 {
 
   public static class TokenizerMapper
+	   // In my mapper, want to output <conf_loc, conf_acro> ex: <KDD 2016, Tokyo> 
+	   // Want output key and value to  be type Text
        extends Mapper<Object, Text, Text, Text>{
 
     private final static IntWritable one = new IntWritable(1);
@@ -29,40 +31,32 @@ public class WordCount2 {
     public void map(Object key, Text value, Context context
                     ) throws IOException, InterruptedException {
       StringTokenizer itr = new StringTokenizer(value.toString(), "\t");
-	  //String[] itr = value.toString().split("\t");
-	  //conf_acro.set(itr[0]);
-	  //conf_name.set(itr[1]);
-	  //conf_name.set(itr[2]);
       while (itr.hasMoreTokens()) {
-		
+	  	// Store off each token (3) per line
 		conf_acro.set(itr.nextToken());
-		
 		conf_name.set(itr.nextToken());
 		conf_loc.set(itr.nextToken());
+		// Write key and value output as text with location and acronym
 		context.write(conf_loc, new Text(conf_acro));
-		//System.out.println(conf_name);
       }
     }
   }
 
   public static class IntSumReducer
+  	// In my reducer, I want to reduce on the key (location)
+	// And keep appending the value (conf_acro) onto matching keys
+	// Example <Los Angeles, KDD 2016> and <Los Angeles, ICDM 2017> 
+	// Would reduce down to <Los Angeles, KDD 2016 ICDM 2017>
        extends Reducer<Text,Text,Text,Text> {
     private Text result = new Text();
 
     public void reduce(Text key, Iterable<Text> values,
                        Context context
                        ) throws IOException, InterruptedException {
-      //int sum = 0;
       String temp = "";
-      /*
-      while(values.hasNext()){
-		  temp = temp + values.next().toString();
-	  }*/
-      
       for (Text val : values) {
         temp += val.toString();
         temp += " ";
-        
       }
       result.set(temp);
       context.write(key, result);
@@ -76,8 +70,8 @@ public class WordCount2 {
     job.setMapperClass(TokenizerMapper.class);
     job.setCombinerClass(IntSumReducer.class);
     job.setReducerClass(IntSumReducer.class);
-    //job.setNumReduceTasks(0);
     job.setOutputKeyClass(Text.class);
+	// New output value type is Text
     job.setOutputValueClass(Text.class);
     FileInputFormat.addInputPath(job, new Path(args[0]));
     FileOutputFormat.setOutputPath(job, new Path(args[1]));
